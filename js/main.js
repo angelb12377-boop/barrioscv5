@@ -118,14 +118,26 @@ if (form) {
       const btn = form.querySelector('.form-submit');
       const msg = form.querySelector('.form-success');
       btn.disabled = true;
-      btn.textContent = 'Sending…';
-      setTimeout(() => {
-        form.reset();
+      btn.textContent = 'Sending...';
+      const data = new FormData(form);
+      fetch(form.action, {
+        method: 'POST',
+        body: data,
+        headers: { 'Accept': 'application/json' }
+      }).then(res => {
+        if (res.ok) {
+          form.reset();
+          msg?.classList.add('show');
+          setTimeout(() => msg?.classList.remove('show'), 6000);
+        } else {
+          alert('Sorry, there was a problem sending your message. Please try again.');
+        }
+      }).catch(() => {
+        alert('Sorry, there was a problem sending your message. Please try again.');
+      }).finally(() => {
         btn.disabled = false;
         btn.textContent = 'Send Message';
-        msg?.classList.add('show');
-        setTimeout(() => msg?.classList.remove('show'), 6000);
-      }, 1200);
+      });
     }
   });
 
