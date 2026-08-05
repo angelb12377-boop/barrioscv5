@@ -69,25 +69,48 @@ const lightboxImg   = document.querySelector('.lightbox-img');
 const lightboxClose = document.querySelector('.lightbox-close');
 
 if (lightbox) {
+  let lastFocused = null;
+
+  const open = item => {
+    const img = item.querySelector('img');
+    lastFocused = item;
+    lightboxImg.src = img.src;
+    lightboxImg.alt = img.alt;
+    lightbox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    lightboxClose && lightboxClose.focus();
+  };
+
   document.querySelectorAll('.gallery-item').forEach(item => {
-    item.addEventListener('click', () => {
-      const img = item.querySelector('img');
-      lightboxImg.src = img.src;
-      lightboxImg.alt = img.alt;
-      lightbox.classList.add('open');
-      document.body.style.overflow = 'hidden';
+    item.addEventListener('click', () => open(item));
+    // tiles are role="button" tabindex="0" — mirror native button key handling
+    item.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        open(item);
+      }
     });
   });
 
   const close = () => {
+    if (!lightbox.classList.contains('open')) return;
     lightbox.classList.remove('open');
     document.body.style.overflow = '';
     lightboxImg.src = '';
+    if (lastFocused) { lastFocused.focus(); lastFocused = null; }
   };
 
   lightboxClose && lightboxClose.addEventListener('click', close);
   lightbox.addEventListener('click', e => { if (e.target === lightbox) close(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+
+  // keep focus inside the dialog while it is open
+  lightbox.addEventListener('keydown', e => {
+    if (e.key === 'Tab' && lightbox.classList.contains('open')) {
+      e.preventDefault();
+      lightboxClose && lightboxClose.focus();
+    }
+  });
 }
 
 // ---------- Contact Form ----------
@@ -97,22 +120,41 @@ if (form) {
     e.preventDefault();
     let valid = true;
 
+    let firstInvalid = null;
+
     form.querySelectorAll('[required]').forEach(field => {
       const group  = field.closest('.form-group');
       const errMsg = group?.querySelector('.error-msg');
+
+      // link the message to its field so screen readers announce it
+      if (errMsg && !errMsg.id) errMsg.id = `${field.id || field.name}-error`;
+
+      const fail = msg => {
+        field.classList.add('error');
+        field.setAttribute('aria-invalid', 'true');
+        if (errMsg) {
+          if (msg) errMsg.textContent = msg;
+          errMsg.classList.add('show');
+          field.setAttribute('aria-describedby', errMsg.id);
+        }
+        if (!firstInvalid) firstInvalid = field;
+        valid = false;
+      };
+
       field.classList.remove('error');
+      field.removeAttribute('aria-invalid');
+      field.removeAttribute('aria-describedby');
       errMsg?.classList.remove('show');
 
       if (!field.value.trim()) {
-        field.classList.add('error');
-        errMsg?.classList.add('show');
-        valid = false;
+        fail();
       } else if (field.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(field.value)) {
-        field.classList.add('error');
-        if (errMsg) { errMsg.textContent = 'Please enter a valid email.'; errMsg.classList.add('show'); }
-        valid = false;
+        fail('Please enter a valid email.');
       }
     });
+
+    // move focus to the first problem so the error is actually announced
+    if (firstInvalid) firstInvalid.focus();
 
     if (valid) {
       const btn = form.querySelector('.form-submit');
@@ -142,10 +184,14 @@ if (form) {
   });
 
   form.querySelectorAll('input, select, textarea').forEach(f => {
-    f.addEventListener('input', () => {
+    const clear = () => {
       f.classList.remove('error');
+      f.removeAttribute('aria-invalid');
+      f.removeAttribute('aria-describedby');
       f.closest('.form-group')?.querySelector('.error-msg')?.classList.remove('show');
-    });
+    };
+    f.addEventListener('input', clear);
+    f.addEventListener('change', clear);
   });
 }
 
