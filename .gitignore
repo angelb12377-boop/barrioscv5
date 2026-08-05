@@ -1,1 +1,15 @@
 .DS_Store
+
+# Raw camera dumps and archives. Source material for the site photos — kept
+# locally, never served. The web-ready versions live in images/projects/.
+images/Clausing/
+images/terra-linda/
+*.zip
+
+# Full-size originals kept for reference; byte-identical copies are in the
+# raw folders above, and nothing on the site references them.
+images/projects/clausing/before-*.jpg
+images/projects/terra-linda/garage-*.jpg
+images/projects/clausing/after-island-*.jpg
+images/projects/clausing/after-sink-wall.jpg
+images/projects/*/slider-*.jpg
